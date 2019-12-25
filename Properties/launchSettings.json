@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "advent-o-code-2019": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Users\\keith\\src\\github.com\\karmakaze\\advent-o-code-2019"
+    }
+  }
+}
