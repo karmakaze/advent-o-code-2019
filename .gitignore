@@ -1,0 +1,6 @@
+bin/
+obj/
+.vs/advent-o-code-2019/xs/project-cache/
+.vs/advent-o-code-2019/xs/UserPrefs.xml
+advent-o-code-2019.fsproj.user
+
