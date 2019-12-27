@@ -4,6 +4,5 @@ open System
 
 [<EntryPoint>]
 let main argv =
-    printfn "%A" Day2.Answer1
-    printfn "%A" Day2.Answer2
+    printfn "%A" Day3.Answer1
     0 // return an integer exit code
