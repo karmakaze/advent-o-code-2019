@@ -12,7 +12,12 @@ let check num =
         let ones = (num / place) % 10
         if tens > ones then false
         else
-            if tens = ones then has_doubled <- true
+            if not has_doubled && tens = ones then
+                has_doubled <- true
+                if place < 10000 && tens = (num / (place * 100)) % 10 then
+                    has_doubled <- false
+                if place > 1 && ones = (num / (place / 10)) % 10 then
+                    has_doubled <- false
             if place = 1 then has_doubled
             else check_place num (place / 10)
     check_place num 10000
@@ -24,7 +29,7 @@ let potentials (start, limit) =
                 yield num
         }
 
-let Answer1 =
+let Answer =
     potentials range
     |> Seq.fold (fun (s:Set<int>) x -> s.Add(x)) Set.empty
     |> Set.count
