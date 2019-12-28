@@ -4,28 +4,7 @@ open System.IO
 
     type Point = int * int
     type Line = Point * Point
-
-    let intersect_v_lines h_line v_lines =
-        let ((hx1, hy), (hx2, _)) = h_line
-        v_lines
-        |> List.fold (fun intersects v_line ->
-                         let ((vx, vy1), (_, vy2)) = v_line
-                         if hx1 < vx && vx < hx2 &&
-                            vy1 < hy && hy < vy2 then
-                            (vx, hy)::intersects
-                         else intersects)
-                     []
-
-    let intersect_h_lines v_line h_lines =
-        let ((vx, vy1), (_, vy2)) = v_line
-        h_lines
-        |> List.fold (fun intersects h_line ->
-                         let ((hx1, hy), (hx2, _)) = h_line
-                         if hx1 < vx && vx < hx2 &&
-                            vy1 < hy && hy < vy2 then
-                            (vx, hy)::intersects
-                         else intersects)
-                     []
+    type Segment = int * Line
 
     let lr_h_line ((x1, y), (x2, _)) =
         if x1 < x2 then ((x1, y), (x2, y))
@@ -35,40 +14,74 @@ open System.IO
         if y1 < y2 then ((x, y1), (x, y2))
         else ((x, y2), (x, y1))
 
+    let distance ((ax:int, ay:int), (bx:int, by:int)) = abs(ax - bx) + abs(ay - by)
+
+    let intersect_v_segments (h_steps, h_line) (v_segments:List<Segment>) =
+        let (h_point, _) = h_line
+        let ((hx1, hy), (hx2, _)) = lr_h_line h_line
+        v_segments
+        |> List.fold (fun intersects v_segment ->
+                         let (v_steps, v_line) = v_segment
+                         let ((vx, vy1), (_, vy2)) = bu_v_line v_line
+                         if hx1 < vx && vx < hx2 &&
+                            vy1 < hy && hy < vy2 then
+                                let (v_point, _) = v_line
+                                let intersect = (vx, hy)
+                                let steps = v_steps + distance(v_point, intersect) +
+                                            h_steps + distance(h_point, intersect)
+                                (steps, intersect)::intersects
+                         else intersects)
+                     []
+
+    let intersect_h_segments (v_steps, v_line) (h_segments:List<Segment>) =
+        let (v_point, _) = v_line
+        let ((vx, vy1), (_, vy2)) = bu_v_line v_line
+        h_segments
+        |> List.fold (fun intersects h_segment ->
+                         let (h_steps, h_line) = h_segment
+                         let ((hx1, hy), (hx2, _)) = lr_h_line h_line
+                         if hx1 < vx && vx < hx2 &&
+                            vy1 < hy && hy < vy2 then
+                               let (h_point, _) = h_line
+                               let intersect = (vx, hy)
+                               let steps = v_steps + distance(v_point, intersect) +
+                                           h_steps + distance(h_point, intersect)
+                               (steps, intersect)::intersects
+                         else intersects)
+                     []
+
     type Grid() =
         [<DefaultValue>]
-        val mutable h_lines : List<Line>
+        val mutable h_segments : List<Segment>
         [<DefaultValue>]
-        val mutable v_lines : List<Line>
+        val mutable v_segments : List<Segment>
 
         member this.init() =
-            this.h_lines <- []
-            this.v_lines <- []
+            this.h_segments <- []
+            this.v_segments <- []
 
-        member this.HLines = this.h_lines
-        member this.PrintHLines = printfn "%A" this.h_lines
+        member this.HLines = this.h_segments
+        member this.PrintHLines = printfn "%A" this.h_segments
 
-        member this.place (a:Point) (b:Point) =
+        member this.place (segment:Segment) =
+            let (_, (a, b)) = segment
             let (ax, ay) = a
             let (bx, by) = b
             if ax = bx then
-                let line = bu_v_line (a, b)
-                this.v_lines <- line::this.v_lines
+                this.v_segments <- segment::this.v_segments
             elif ay = by then
-                let line = lr_h_line (a, b)
-                this.h_lines <- line::this.h_lines
-            else invalidArg "a b" "Lines must be horizontal or vertical" 
+                this.h_segments <- segment::this.h_segments
+            else invalidArg "segment" "Segments must be horizontal or vertical" 
 
-        member this.intersect (a:Point) (b:Point) =
+        member this.intersect (segment:Segment) =
+            let (_, (a, b)) = segment
             let (ax, ay) = a
             let (bx, by) = b
             if ax = bx then
-                let line = bu_v_line (a, b)
-                intersect_h_lines line this.h_lines
+                intersect_h_segments segment this.h_segments
             elif ay = by then
-                let line = lr_h_line (a, b)
-                intersect_v_lines line this.v_lines
-            else invalidArg "a b" "Lines must be horizontal or vertical" 
+                intersect_v_segments segment this.v_segments
+            else invalidArg "segment" "Segments must be horizontal or vertical" 
 
     let filename = "day3-input.txt"
 
@@ -95,26 +108,25 @@ open System.IO
         elif dir = 'D' then (lx, ly - mag)
         else invalidArg (string dir) "dir must be L, R, U, or D"
 
-    let placefun ((grid:Grid), (last:Point)) (cmd:string) =
+    let placefun ((grid:Grid), (steps:int), (last:Point)) (cmd:string) =
         let (dir, mag) = dirMag cmd
         let next = nextPoint last (dir, mag)
-        grid.place last next
-        (grid, next)
+        grid.place (steps, (last, next))
+        (grid, steps + (distance (last, next)), next)
 
-    let interfun ((intersects:List<Point>), (grid:Grid), (last:Point)) (cmd:string) =
+    let interfun ((intersects:List<int *Point>), (grid:Grid), (steps:int), (last:Point)) (cmd:string) =
         let (dir, mag) = dirMag cmd
         let next = nextPoint last (dir, mag)
-        (intersects @ (grid.intersect last next), grid, next)
+        (intersects @ grid.intersect (steps, (last, next)), grid, steps + distance (last, next), next)
 
     let Answer1 =
         let grid = new Grid()
         grid.init()
-        input.[0] |> List.fold placefun (grid, (0, 0)) |> ignore // mutates grid
+        input.[0] |> List.fold placefun (grid, 0, (0, 0)) |> ignore // mutates grid
         input.[1]
-        |> List.fold interfun ([], grid, (0, 0))
-        |> fun (intersects, _, _) -> intersects
-        |> List.fold (fun (d, p) (x, y) ->
-                         let dist = abs x + abs y
-                         if d = -1 || dist < d then (dist, (x, y))
-                         else (d, p))
+        |> List.fold interfun ([], grid, 0, (0, 0))
+        |> fun (intersects, _, _, _) -> intersects
+        |> List.fold (fun (d, sp) (s, (x, y)) ->
+                         if d = -1 || s < d then (s, (x, y))
+                         else (d, sp))
                      (-1, (0, 0))
