@@ -90,10 +90,6 @@ open System.IO
         |> Seq.map (fun x -> x.Split ',')
         |> Seq.map Array.toList
         |> Seq.toList
-    //let input = ["R75,D30,R83,U83,L12,D49,R71,U7,L72".Split( ',') |> Array.toList
-    //             "U62,R66,U55,R34,D71,R55,D58,R83".Split( ',')  |> Array.toList]
-
-    // part 1
 
     let dirMag (command:string) =
         let dir = command.[0]
@@ -120,6 +116,18 @@ open System.IO
         (intersects @ grid.intersect (steps, (last, next)), grid, steps + distance (last, next), next)
 
     let Answer1 =
+        let grid = new Grid()
+        grid.init()
+        input.[0] |> List.fold placefun (grid, 0, (0, 0)) |> ignore // mutates grid
+        input.[1]
+        |> List.fold interfun ([], grid, 0, (0, 0))
+        |> fun (intersects, _, _, _) -> intersects
+        |> List.fold (fun (d, sp) (s, (x, y)) ->
+                         if d = -1 || s < d then (s, (x, y))
+                         else (d, sp))
+                     (-1, (0, 0))
+
+    let Answer2 =
         let grid = new Grid()
         grid.init()
         input.[0] |> List.fold placefun (grid, 0, (0, 0)) |> ignore // mutates grid
