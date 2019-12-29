@@ -18,6 +18,8 @@ let input = File.ReadLines(filename)
 //            "E)J"
 //            "J)K"
 //            "K)L"
+//            "K)YOU"
+//            "I)SAN"
 //            }
 
 let inputList = input |>Seq.toList
@@ -74,6 +76,18 @@ type TreeGraph =
 
         g.roots |> Set.fold (fun total root -> countOrbits -1 root) 0
 
+    member g.pathToRoot (vertex:Vertex) =
+        let rec pathToRoot path (vertex:Vertex) =
+            let comings = g.comings vertex
+            if comings.Count = 1 then
+                comings |> Set.fold (fun path coming -> pathToRoot (coming::path) coming) path
+            elif vertex = "COM" then
+                path
+            else
+                printfn "path %A vertex %A comings %A" path vertex comings
+                []
+        pathToRoot [] vertex
+
     member g.printTree (indent:string) (vertex:Vertex) : unit =
         printfn "%s%A" indent vertex
         g.outEdges.TryFind vertex
@@ -83,5 +97,10 @@ type TreeGraph =
 let Answer =
     let g = TreeGraph()
     orbits |> List.map g.addOrbit |> ignore
-//    g.roots |> Set.map (fun root -> g.printTree "" root)
-    g.countOrbits
+    let rootToYou = g.pathToRoot "YOU"
+    let rootToSan = g.pathToRoot "SAN"
+    let paths = Seq.zip (rootToYou |> List.toSeq) (rootToSan |> List.toSeq)
+    let commonPath = paths |> Seq.takeWhile (fun (y, s) -> y = s) |> Seq.toList
+    let (_, uniqueToYou) = rootToYou |> (List.splitAt commonPath.Length)
+    let (_, uniqueToSan) = rootToSan |> (List.splitAt commonPath.Length)
+    uniqueToYou.Length + uniqueToSan.Length
