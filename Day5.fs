@@ -12,8 +12,13 @@ let input =
 
 //let input = [| 3; 0; 4; 0; 99 |]
 //let input = [| 1002; 4; 3; 4; 33 |]
+//let input = [| 3; 9; 8; 9; 10; 9; 4; 9; 99; -1; 8 |]
+//let input = [| 3; 21; 1008; 21; 8; 20; 1005; 20; 22; 107; 8; 21; 20; 1006; 20; 31;
+    //1106; 0; 36; 98; 0; 0; 1002; 21; 125; 20; 4; 20; 1105; 1; 46; 104;
+    //999; 1105; 1; 46; 1101; 1000; 1; 20; 4; 20; 1105; 1; 46; 98; 99
+    //|]
 
-let mutable readSource = [ 1 ]
+let mutable readSource = [ 5 ]
 let mutable (writeSink:List<int>) = []
 
 let readInput =
@@ -71,9 +76,40 @@ let rec run pc (core:int[]) =
         let value = load (mode opcode 1) (core.[pc + 1]) core
         writeOutput value
         run (pc + 2) core
+    | 5 -> // jump-if-true
+        let value1 = load (mode opcode 1) (core.[pc + 1]) core
+        if value1 <> 0 then
+            let value2 = load (mode opcode 2) (core.[pc + 2]) core
+            run value2 core
+        else
+            run (pc + 3) core
+    | 6 -> // jump-if-false
+        let value1 = load (mode opcode 1) (core.[pc + 1]) core
+        if value1 = 0 then
+            let value2 = load (mode opcode 2) (core.[pc + 2]) core
+            run value2 core
+        else
+            run (pc + 3) core
+    | 7 -> // less than
+        let value1 = load (mode opcode 1) (core.[pc + 1]) core
+        let value2 = load (mode opcode 2) (core.[pc + 2]) core
+        let value =
+            if value1 < value2 then 1
+            else 0
+        store value 0 (core.[pc + 3]) core
+        run (pc + 4) core
+    | 8 -> // equals
+        let value1 = load (mode opcode 1) (core.[pc + 1]) core
+        let value2 = load (mode opcode 2) (core.[pc + 2]) core
+        let value =
+            if value1 = value2 then 1
+            else 0
+        store value 0 (core.[pc + 3]) core
+        run (pc + 4) core
     | 99 -> // halt
         writeSink |> List.rev
     | _ -> // fail
         [ opcode ]
 
 let Answer = run 0 input
+// 15537994
