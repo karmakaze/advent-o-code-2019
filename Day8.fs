@@ -1,6 +1,7 @@
 ﻿module Day8
 
 open System.IO
+open System
 
 let filename = "day8-input.txt"
 
@@ -15,10 +16,18 @@ type Layer(width:int, height:int, data:string) =
     member layer.count ch =
         data |> Seq.filter ((=) ch) |> Seq.length
 
+    member layer.string = data
+
     member layer.print =
         for row in 0 .. (height-1) do
             let offset = row * width
             printfn "Layer row %A" data.[offset .. (offset + width - 1)]
+
+    member layer.printBlack =
+        for row in 0 .. (height-1) do
+            let offset = row * width
+            let black = data.[offset .. (offset + width - 1)].Replace("0", " ")
+            printfn "Layer row %A" black
 
 type Image private () =
     [<DefaultValue>]
@@ -33,13 +42,28 @@ type Image private () =
 //              printfn "Image layer %A" data.[offset .. (offset + width * height - 1)]
                 im.layers <- im.layers @ [Layer(width, height, data.[offset .. (offset + width * height - 1)])]
 
+    member im.render =
+        let layerStrings:List<List<char>> = im.layers |> List.map (fun layer -> layer.string |> Seq.toList)
+        layerStrings
+        |> List.transpose
+        |> List.map (fun pixels -> let visible = pixels |> List.filter (fun pixel -> pixel <> '2')
+                                   let vis_or_trans = visible @ ['2']
+                                   vis_or_trans |> List.head)
+        |> List.toSeq |> String.Concat
+        |> (fun data -> Image(width, height, data))
+
     member im.printLayers =
         for layer in im.layers do
             layer.print
         ()
 
+    member im.printBlack =
+        for layer in im.layers do
+            layer.printBlack
+        ()
+
 let Answer =
     let image = Image(width, height, input)
-    image.layers
-    |> List.minBy (fun layer -> layer.count '0')
-    |> (fun layer -> (layer.count '1') * (layer.count '2'))
+    let rendered = image.render
+    rendered.printBlack
+    rendered
