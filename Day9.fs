@@ -143,6 +143,6 @@ type IntcodeComputer private () =
         run pc
 
 let Answer =
-    let ic = IntcodeComputer([bigint 1], input)
+    let ic = IntcodeComputer([bigint 2], input)
     ic.run 0
     ic.writeSink
