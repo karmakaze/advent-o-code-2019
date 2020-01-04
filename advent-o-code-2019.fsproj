@@ -5,7 +5,7 @@
     <RootNamespace>advent_o_code_2019</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="File1.fs" />
+    <Compile Include="Day8.fs" />
     <Compile Include="Day7.fs" />
     <Compile Include="Day6.fs" />
     <Compile Include="Day5.fs" />
