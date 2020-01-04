@@ -27,7 +27,7 @@ type Layer(width:int, height:int, data:string) =
         for row in 0 .. (height-1) do
             let offset = row * width
             let black = data.[offset .. (offset + width - 1)].Replace("0", " ")
-            printfn "Layer row %A" black
+            printfn "Black row %A" black
 
 type Image private () =
     [<DefaultValue>]
