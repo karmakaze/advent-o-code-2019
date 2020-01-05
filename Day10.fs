@@ -67,6 +67,37 @@ let addAsteroid (m: Map<int*int, List<int*int>>) (dir:int*int) (asteroid:int*int
     | Some asteroids -> m.Add (dir, asteroid::asteroids)
     | None -> m.Add (dir, asteroid::[])
 
+let quadrant (x:int, y:int) =
+    if x >= 0 && y < 0 then 0
+    elif x > 0 && y >= 0 then 1
+    elif x <= 0 && y > 0 then 2
+    elif x < 0 && y <= 0 then 3
+    else invalidArg "(x, y)" "may not be (0, 0)"
+
+let compareByDir ((x1:int, y1:int), vs1:List<int*int>) ((x2:int, y2:int), vs2:List<int*int>) =
+    let q1 = quadrant (x1, y1)
+    let q2 = quadrant (x2, y2)
+    match compare q1 q2 with
+    | 0 ->
+        if q1 = 0 || q1 = 2 then
+            let slope1 = double x1 / double y1
+            let slope2 = double x2 / double y2
+            compare slope2 slope1
+        else
+            let slope1 = (- double y1) / double x1
+            let slope2 = (- double y2) / double x2
+            compare slope2 slope1
+    | c -> c
+
+let quadrantSlope (dx:int, dy:int) =
+    let q = quadrant (dx, dy)
+    let s = match q with
+                | 0 -> double dx / double dy
+                | 1 -> - double dy / double dx
+                | 2 -> double dx / double dy
+                | 3 -> - double dy / double dx
+    (q, s)
+
 let Answer =
     let asteroids = coOrds input
     let bestMonitor =
@@ -78,5 +109,8 @@ let Answer =
                                     (monitor, visible))
         |> List.maxBy (fun (monitor, visible) -> visible.Count)
     let (monitor, visible) = bestMonitor
+    let otherVisible = visible.Remove (0, 0)
     printfn "Best monitor: %A" monitor
-    visible.Count - 1
+    otherVisible |> Map.toList |> List.sortWith compareByDir
+//                 |> List.map (fun ((dx, dy) as dir, asteroids) -> (quadrantSlope (dx, dy), dir, asteroids))
+                 |> List.toSeq |> Seq.skip 199 |> Seq.take 1
