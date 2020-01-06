@@ -196,6 +196,15 @@ type IntcodeComputer private () =
 
 let Answer =
     let r = PaintingRobot((0, 0), FacingEnum.North)
+    r.PaintColor ColorEnum.White
     let ic = IntcodeComputer(r, input)
     ic.run 0 |> ignore
-    r.PaintedSquares
+    let whiteSquares = r.grid |> Map.filter (fun pos color -> color = ColorEnum.White)
+                              |> Map.toSeq |> Seq.map fst |> Seq.toList
+    let blank:char[] = Array.create (40 * 6) ' '
+    let raster = whiteSquares
+                 |> List.fold (fun (a:char[]) (x, y) -> a.[y * 40 + x] <- '#'; a) blank
+    for row in 0 .. 5 do
+        let line = (raster.[row * 40 .. row * 40 + 39] |> String.Concat)
+        printfn "%A" line
+    ()
