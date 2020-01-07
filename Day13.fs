@@ -30,6 +30,7 @@ type Core private () =
 
 type TileEnum = Empty=0 | Wall=1 | Block=2 | Paddle=3 | Ball=4
 
+type Joy = Left = -1 | Centre = 0 | Right = 1
 
 type PaintingRobot private () =
     [<DefaultValue>] val mutable grid:Map<int*int, TileEnum>
@@ -49,6 +50,10 @@ type IntcodeComputer private () =
     [<DefaultValue>] val mutable outX: int option
     [<DefaultValue>] val mutable outY: int option
     [<DefaultValue>] val mutable relativeBase:bigint
+    [<DefaultValue>] val mutable lastBallPos:Option<int*int>
+    [<DefaultValue>] val mutable currBallPos:Option<int*int>
+    [<DefaultValue>] val mutable currPaddlePos:Option<int*int>
+    [<DefaultValue>] val mutable score:bigint
     [<DefaultValue>] val mutable core:Map<int, bigint>
 
     new(robot:PaintingRobot, core:list<bigint>) as ic =
@@ -56,12 +61,25 @@ type IntcodeComputer private () =
         then ic.robot <- robot
              ic.outX <- None
              ic.outY <- None
+             ic.lastBallPos <- None
+             ic.currBallPos <- None
+             ic.score <- bigint 0
              ic.core <- Map.empty
              for i in 0 .. (core.Length - 1) do
                  ic.core <- ic.core.Add (i, core.[i])
 
     member ic.readInput: bigint =
-            invalidArg "readInput" "not supported"
+//        printfn "lastBall %A curBall %A paddle %A" ic.lastBallPos ic.currBallPos ic.currPaddlePos
+        match (ic.currBallPos, ic.currPaddlePos) with
+        | (Some ballPos, Some paddlePos) ->
+            let (ballX, _) = ballPos
+            let (paddleX, _) = paddlePos
+            if paddleX < ballX then
+                bigint 1
+            elif paddleX > ballX then
+                bigint -1
+            else bigint 0
+        | _ -> bigint -1
 
     member ic.writeOutput (value:bigint) =
         match (ic.outX, ic.outY) with
@@ -72,10 +90,22 @@ type IntcodeComputer private () =
             ic.outY <- Some (int value)
             ()
         | (Some x, Some y) ->
-            let tile = int value
-            ic.robot.PaintTile x y (enum tile)
             ic.outX <- None
             ic.outY <- None
+            if x = -1 && y = 0 then
+                ic.score <- value
+            else
+                let tile = int value
+                ic.robot.PaintTile x y (enum tile)
+                match enum tile with
+                | TileEnum.Paddle ->
+                    ic.currPaddlePos <- Some (x, y)
+                    ()
+                | TileEnum.Ball ->
+                    ic.lastBallPos <- ic.currBallPos
+                    ic.currBallPos <- Some (x, y)
+                    ()
+                | _ -> ()
             ()
 
     let mode (opcode:int) (index:int) =
@@ -178,10 +208,11 @@ type IntcodeComputer private () =
 let Answer =
     let r = PaintingRobot(0)
     let ic = IntcodeComputer(r, input)
+    ic.core <- ic.core.Add(0, bigint 2)
     ic.run 0 |> ignore
-    let blocks = r.grid |> Map.toList
-                        |> List.filter (fun (pos, tile) -> tile = TileEnum.Block)
-    blocks.Length
+//    let blocks = r.grid |> Map.toList
+//                        |> List.filter (fun (pos, tile) -> tile <> TileEnum.Empty && tile <> TileEnum.Wall)
+//    blocks
 
 //    let blank:char[] = Array.create (40 * 6) ' '
 //    let raster = whiteSquares
@@ -190,3 +221,4 @@ let Answer =
 //        let line = (raster.[row * 40 .. row * 40 + 39] |> String.Concat)
 //        printfn "%A" line
 //    ()
+    ic.score
